@@ -36,6 +36,12 @@ App.store = DS.Store.create({
 
 You have to specify the name of the database with the `db` property - and if you want to use `findAll`, you'll have to set the name of the design document with the `designDoc` property.
 
+Ssured fork
+-----------
+
+The update in the ssured fork is twofold:
+1- update to API 6 of ember data
+2- it supports the _changes feed of CouchDB, which keeps the objects in sync, across different devices
 
 Get started
 -----------
