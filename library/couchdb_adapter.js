@@ -317,7 +317,7 @@
         json._id = json.id;
         delete json.id;
       }
-      this.ajax(escape(json._id || ''), json._id ? 'PUT' : 'POST', {
+      this.ajax(encodeURIComponent(json._id || ''), json._id ? 'PUT' : 'POST', {
         data: json,
         context: this,
         success: function(data) {
@@ -333,7 +333,7 @@
       json._id = json.id;
       json._rev = record.get('data.attributes.rev');
       delete json.id;
-      this.ajax(json._id, 'PUT', {
+      this.ajax(encodeURIComponent(json._id), 'PUT', {
         data: json,
         context: this,
         success: function(data) {
@@ -348,7 +348,7 @@
       if (record.get('data.attributes._remote_deleted')) {
         store.didDeleteRecord(record); // fire and forget...
       } else {
-        this.ajax(record.get('id') + '?rev=' + record.get('data.attributes.rev'), 'DELETE', {
+        this.ajax(encodeURIComponent(record.get('id')) + '?rev=' + record.get('data.attributes.rev'), 'DELETE', {
           context: this,
           success: function(data) {
             store.didSaveRecord(record);
