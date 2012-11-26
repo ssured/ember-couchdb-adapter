@@ -72,6 +72,7 @@ module("CouchDBAdapter", {
     });
 
     store = DS.Store.create({
+      revision: 8,
       adapter: adapter
     });
 

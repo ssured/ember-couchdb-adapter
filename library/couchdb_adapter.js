@@ -16,7 +16,7 @@
 
   var get = Ember.get, set = Ember.set;
   
-  DS.Model.reopen({
+/*  DS.Model.reopen({
     addDirtyFactor: function(name) {
       // in the CouchDB setup, the belongsTo record defines the association
       // this code makes sure changing hasMany associations do not dirty the record
@@ -31,7 +31,7 @@
     remoteUpdateRecord: function(change) {
       // TODO: optimize this logic
       Ember.changeProperties(function(){
-        var data = $.extend(this.toJSON({ includeId: true }), change.doc); 
+        var data = $.extend(this.toData({ includeId: true }), change.doc); 
         this.get('store.adapter.serializer').addHasManyRelationships(data, this);
         get(this, 'store').load(this.constructor, data);
       }, this);
@@ -84,7 +84,7 @@
       
       return result;
     }
-  });
+  });*/
   
   // var oldSync = DS.OneToManyChange.prototype.sync;
   // DS.OneToManyChange.prototype.sync = function(){
@@ -92,7 +92,7 @@
   // }
   
   DS.CouchDBSerializer = DS.Serializer.extend({
-    materializeFromJSON: function(record, hash) {
+    materializeFromData: function(record, hash) {
       var result = this._super(record, hash);
       if (hash && hash.rev) {
         record.materializeAttribute('rev', hash.rev);
@@ -310,7 +310,7 @@
     },
 
     createRecord: function(store, type, record) {
-      var json = record.toJSON({ includeId: true });
+      var json = record.toData({ includeId: true });
       if (json.id) {
         json._id = json.id;
         delete json.id;
@@ -327,7 +327,7 @@
     },
 
     updateRecord: function(store, type, record) {
-      var json = record.toJSON({ includeId: true });
+      var json = record.toData({ includeId: true });
       json._id = json.id;
       json._rev = record.get('data.attributes.rev');
       delete json.id;
@@ -456,7 +456,7 @@
                   continue;
                 var value = options[name];
                 if ($.inArray(name, ["key", "startkey", "endkey"]) >= 0) {
-                  value = toJSON(value);
+                  value = toData(value);
                 }
                 buf.push(encodeURIComponent(name) + "=" + encodeURIComponent(value));
               }
