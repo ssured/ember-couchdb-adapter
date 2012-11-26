@@ -16,7 +16,7 @@
 
   var get = Ember.get, set = Ember.set;
   
-/*  DS.Model.reopen({
+  DS.Model.reopen({
     addDirtyFactor: function(name) {
       // in the CouchDB setup, the belongsTo record defines the association
       // this code makes sure changing hasMany associations do not dirty the record
@@ -59,32 +59,32 @@
     load: function(type, id, _hash) {
       // TODO, maybe this logic should be put in  store.materializeRecord: function(type, clientId, id) ??
       var result = this._super(type, id, _hash);
-      var belongsToRecord, hasManyKey, hasManyClientId, hasManyRecord;
-      
-      // automatically load the belongsTo relationship
-      // in this couchdb adapter belongsTo relationships are considered stronger than hasMany
-      var hash = this.clientIdToHash[result.clientId];
-      get(type, 'associationsByName').forEach(function(name, relationship) {
-        if (relationship.kind === 'belongsTo') {
-          // try to find the cached parent object and figure out the remote key
-          if ((hasManyClientId = this.typeMapFor(relationship.type).idToCid[hash[relationship.key]]) && 
-                (hasManyKey = DS.inverseNameFor(relationship.type, type, 'hasMany'))) {
-            // get the records involved
-            belongsToRecord = this.findByClientId(type, result.clientId);
-            hasManyRecord =   this.findByClientId(relationship.type, hasManyClientId);
-            if (belongsToRecord && hasManyRecord) {
-              // apply the relation, but do not dirty the belongsTo record, as it's already referencing the correct object
-              hasManyRecord.suspendAssociationObservers(function(){
-                hasManyRecord.get(hasManyKey).addToContent(belongsToRecord);
-              });
-            }
-          }
-        }
-      }, this);
+      // var belongsToRecord, hasManyKey, hasManyClientId, hasManyRecord;
+      // 
+      // // automatically load the belongsTo relationship
+      // // in this couchdb adapter belongsTo relationships are considered stronger than hasMany
+      // var hash = this.recordCache[result.clientId];
+      // get(type, 'associationsByName').forEach(function(name, relationship) {
+      //   if (relationship.kind === 'belongsTo') {
+      //     // try to find the cached parent object and figure out the remote key
+      //     if ((hasManyClientId = this.typeMapFor(relationship.type).idToCid[hash[relationship.key]]) && 
+      //           (hasManyKey = DS.inverseNameFor(relationship.type, type, 'hasMany'))) {
+      //       // get the records involved
+      //       belongsToRecord = this.findByClientId(type, result.clientId);
+      //       hasManyRecord =   this.findByClientId(relationship.type, hasManyClientId);
+      //       if (belongsToRecord && hasManyRecord) {
+      //         // apply the relation, but do not dirty the belongsTo record, as it's already referencing the correct object
+      //         hasManyRecord.suspendAssociationObservers(function(){
+      //           hasManyRecord.get(hasManyKey).addToContent(belongsToRecord);
+      //         });
+      //       }
+      //     }
+      //   }
+      // }, this);
       
       return result;
     }
-  });*/
+  });
   
   // var oldSync = DS.OneToManyChange.prototype.sync;
   // DS.OneToManyChange.prototype.sync = function(){
