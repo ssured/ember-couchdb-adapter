@@ -41,15 +41,13 @@
     },
     remoteDeleteRecord: function(change) {
       if (!this.get('isDeleted')) {
-        Ember.changeProperties(function(){
-          // delete the record in a separate transaction, while temporarily disabling communication with the backend
-          var store = get(this, 'store');
-          var transaction = store.transaction();
-          transaction.add(this);
-          this.deleteRecord();
-          this.set('data.attributes._remote_deleted', true); // mark for silent deletion
-          transaction.commit();
-        }, this);
+        // delete the record in a separate transaction, while temporarily disabling communication with the backend
+        var store = get(this, 'store');
+        var transaction = store.transaction();
+        transaction.add(this);
+        this.deleteRecord();
+        this.set('data.attributes._remote_deleted', true); // mark for silent deletion
+        transaction.commit();
       }
     },
     onRemoteDeleteConflict: function(change) {
