@@ -72,7 +72,7 @@ module("CouchDBAdapter", {
     });
 
     store = DS.Store.create({
-      revision: 8,
+      revision: 9,
       adapter: adapter
     });
 
@@ -817,36 +817,21 @@ test("Remote deletion of a record", function() {
   equal(ajaxHash, "no change", 'Remote deletion does not talk to the server');
 });
 
-test("Loading an associated record, creates the association", function() {
+test("Creating an associated record, by referencing the object, updates the association", function() {
   store.load(Person, {id: 'p1', rev: 'p1rev', name: 'author', articles: []});
   var person = store.find(Person, 'p1');
   ok(person);
   expectState('dirty', false, person);
   equal(person.get('articles.length'), 0, 'Person did not write any articles yet');
   
-  store.load(Article, {id: 'a1', rev: 'a1rev', label: 'article', writer: 'p1'});
-  expectState('dirty', false, person);
-  equal(person.get('articles.length'), 1, 'Person got one remote article');
-
-  var article = store.find(Article, 'a1');
-  expectState('dirty', false, article);
-  equal(article.get('writer.name'), 'author', 'The article references the person');
-});
-
-test("Creating an associated record, updates the association", function() {
-  store.load(Person, {id: 'p1', rev: 'p1rev', name: 'author', articles: []});
-  var person = store.find(Person, 'p1');
-  ok(person);
-  expectState('dirty', false, person);
-  equal(person.get('articles.length'), 0, 'Person did not write any articles yet');
+  var article = Article.createRecord({id: 'a1', label:'article', writer:person});
   
-  var article = Article.createRecord({id: 'a1', label:'article', writer: person});      // this statement fails
-  // article.set('writer', person);                                                     // this statement succeeds
   expectState('dirty', false, person);
   expectState('dirty', true, article);
   equal(article.get('writer.name'), 'author', 'The article references the person');
   equal(person.get('articles.length'), 1, 'Person got one remote article');
 });
+
 test("Remote creation of an associated record", function() {
   store.load(Person, {id: 'p1', rev: 'p1rev', name: 'author', articles: []});
   var person = store.find(Person, 'p1');
@@ -870,6 +855,10 @@ test("Remote creation of an associated record", function() {
   
   expectState('dirty', false, person);
   equal(person.get('articles.length'), 1, 'Person got one remote article');
+
+  var article = store.find(Article, 'a1');
+  ok(article);
+  expectState('dirty', false, article);
 });
 test("Remote deletion of a locally deleted record", function() {
   store.load(Person, {id: 'p1', rev: 'p1rev', name: 'author', articles: []});

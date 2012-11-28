@@ -1,3 +1,15 @@
+/*
+TODO:
+implement&test     ```javascript
+    App.MySerializer = DS.Serializer.extend({
+      // ...
+      primaryKey: function(type) {
+        return '_id';
+      }
+    });
+    ```
+
+*/
 (function(){
   // Copyright (c) Clemens Müller, @pangratz, 2012
   // Copyright (c) Sjoerd de Jong, @ssured, 2012
@@ -17,24 +29,11 @@
   var get = Ember.get, set = Ember.set;
   
   DS.Model.reopen({
-    addDirtyFactor: function(name) {
-      // in the CouchDB setup, the belongsTo record defines the association
-      // this code makes sure changing hasMany associations do not dirty the record
-      // TODO: this should either be moved to a mixin, or (preferred) moved into the adapter
-      var association = get(this.constructor, 'associationsByName').get(name);
-      if (association && association.isAssociation && association.kind == 'hasMany') {
-        return;
-      } else {
-        this._super(name);
-      }
-    },
     remoteUpdateRecord: function(change) {
       // TODO: optimize this logic
-      Ember.changeProperties(function(){
-        var data = $.extend(this.toData({ includeId: true }), change.doc); 
-        this.get('store.adapter.serializer').addHasManyRelationships(data, this);
-        get(this, 'store').load(this.constructor, data);
-      }, this);
+      var data = $.extend(this.toData({ includeId: true }), change.doc); 
+      this.get('store.adapter.serializer').addHasManyRelationships(data, this);
+      get(this, 'store').load(this.constructor, data);
     },
     onRemoteUpdateConflict: function(change) {
       this.set('data.attributes.rev',change.changes[0].rev);
@@ -52,47 +51,26 @@
     },
     onRemoteDeleteConflict: function(change) {
       this.set('data.attributes.rev',change.changes[0].rev);
+    },
+    setProperties: function(hash) {
+      for(var prop in hash) {
+        if (hash.hasOwnProperty(prop)) this.set(prop, hash[prop]);
+      }
+      return this;
     }
   });
   
-  DS.Store.reopen({
-    load: function(type, id, _hash) {
-      // TODO, maybe this logic should be put in  store.materializeRecord: function(type, clientId, id) ??
-      var result = this._super(type, id, _hash);
-      // var belongsToRecord, hasManyKey, hasManyClientId, hasManyRecord;
-      // 
-      // // automatically load the belongsTo relationship
-      // // in this couchdb adapter belongsTo relationships are considered stronger than hasMany
-      // var hash = this.recordCache[result.clientId];
-      // get(type, 'associationsByName').forEach(function(name, relationship) {
-      //   if (relationship.kind === 'belongsTo') {
-      //     // try to find the cached parent object and figure out the remote key
-      //     if ((hasManyClientId = this.typeMapFor(relationship.type).idToCid[hash[relationship.key]]) && 
-      //           (hasManyKey = DS.inverseNameFor(relationship.type, type, 'hasMany'))) {
-      //       // get the records involved
-      //       belongsToRecord = this.findByClientId(type, result.clientId);
-      //       hasManyRecord =   this.findByClientId(relationship.type, hasManyClientId);
-      //       if (belongsToRecord && hasManyRecord) {
-      //         // apply the relation, but do not dirty the belongsTo record, as it's already referencing the correct object
-      //         hasManyRecord.suspendAssociationObservers(function(){
-      //           hasManyRecord.get(hasManyKey).addToContent(belongsToRecord);
-      //         });
+  DS.CouchDBSerializer = DS.Serializer.extend({
+    materializeFromData: function(record, hash) {
+      // get(record.constructor, 'associationsByName').forEach(function(name, relationship) {
+      //   if (relationship.kind == 'belongsTo') {
+      //     if (hash.hasOwnProperty(name)) {
+      //       if (Ember.typeOf(hash[name]) == 'string') {
+      //         hash[name] = record.get('store').find(relationship.type, hash[name]);
       //       }
       //     }
       //   }
       // }, this);
-      
-      return result;
-    }
-  });
-  
-  // var oldSync = DS.OneToManyChange.prototype.sync;
-  // DS.OneToManyChange.prototype.sync = function(){
-  //   if (this.getHasManyName()) oldSync.apply(this);
-  // }
-  
-  DS.CouchDBSerializer = DS.Serializer.extend({
-    materializeFromData: function(record, hash) {
       var result = this._super(record, hash);
       if (hash && hash.rev) {
         record.materializeAttribute('rev', hash.rev);
@@ -190,8 +168,7 @@
     },
 
     ajax: function(url, type, hash) {
-      var db = this.get('db');
-      return this._ajax('/%@/%@'.fmt(db, url || ''), type, hash);
+      return this._ajax('/%@/%@'.fmt(this.get('db'), url || ''), type, hash);
     },
 
     stringForType: function(type) {
@@ -251,6 +228,13 @@
         store.loadMany(type, docs);
       }    
     },
+
+    // Do not dirty by changes on HasMany relationships. The CouchDB adapter stores relations in the child record. Parent 
+    // data is generated on the server and loaded in a second request. Reasoning behind this behaviour is minimizing the 
+    // number of writes to the DB, and thus minimizing the updates in the _changes feed.
+    dirtyRecordsForHasManyChange: Ember.K,
+    // dirtyRecordsForAttributeChange: Ember.K,
+    // dirtyRecordsForBelongsToChange: Ember.K,
 
     find: function(store, type, id) {
       this.ajax(id, 'GET', {
@@ -344,7 +328,7 @@
 
     deleteRecord: function(store, type, record) {
       if (record.get('data.attributes._remote_deleted')) {
-        store.didDeleteRecord(record); // fire and forget...
+        store.didSaveRecord(record); // fire and forget...
       } else {
         this.ajax(encodeURIComponent(record.get('id')) + '?rev=' + record.get('data.attributes.rev'), 'DELETE', {
           context: this,
@@ -414,6 +398,11 @@
                 // an associated record is loaded in the cache, so load this record
                 store.load(type, change.doc);
                 record = store.find(type, change.id);
+                
+                parent = record.get(key);
+                record.set(key, null);
+                record.set(key, parent);
+                // throw new Ember.Error(parent.get('name'));
               }
             });
           }          
